@@ -9,7 +9,7 @@ import org.guanzon.appdriver.agent.ShowDialogFX;
 import org.guanzon.appdriver.base.GRider;
 import org.guanzon.appdriver.constant.EditMode;
 import org.guanzon.appdriver.iface.GRecord;
-import org.guanzon.auto.parts.model.Model_Inventory_Model;
+import org.guanzon.auto.model.parts.Model_Inventory_Model;
 import org.json.simple.JSONObject;
 
 /**
