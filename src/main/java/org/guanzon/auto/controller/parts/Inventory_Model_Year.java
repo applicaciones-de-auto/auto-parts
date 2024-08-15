@@ -183,7 +183,6 @@ public class Inventory_Model_Year {
     public Object getDetail(int fnRow, int fnIndex){return paDetail.get(fnRow).getValue(fnIndex);}
     public Object getDetail(int fnRow, String fsIndex){return paDetail.get(fnRow).getValue(fsIndex);}
     
-    
     public Object removeDetail(int fnRow){
         JSONObject loJSON = new JSONObject();
         
