@@ -6,6 +6,13 @@
 package org.guanzon.auto.controller.parts;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.sql.rowset.CachedRowSet;
+import javax.sql.rowset.RowSetFactory;
+import javax.sql.rowset.RowSetProvider;
 import org.guanzon.appdriver.agent.ShowDialogFX;
 import org.guanzon.appdriver.base.GRider;
 import org.guanzon.appdriver.base.MiscUtil;
@@ -32,6 +39,7 @@ public class Inventory_Information implements GRecord {
     Model_Inventory_Information poModel;
     JSONObject poJSON;
     
+    CachedRowSet poVhclModel;
 
     public Inventory_Information(GRider foGRider, boolean fbWthParent, String fsBranchCd) {
         poGRider = foGRider;
@@ -83,7 +91,7 @@ public class Inventory_Information implements GRecord {
             Connection loConn = null;
             loConn = setConnection();
             poModel.newRecord();
-            poModel.setStockID(MiscUtil.getNextCode(poModel.getTable(), "sStockIDx", false, loConn, psBranchCd));
+            poModel.setStockID(MiscUtil.getNextCode(poModel.getTable(), "sStockIDx", true, loConn, psBranchCd+"ST"));
             
             if (poModel == null){
                 poJSON.put("result", "error");
@@ -153,16 +161,7 @@ public class Inventory_Information implements GRecord {
             return poJSON;
         }
         
-        if (!pbWtParent) poGRider.beginTrans();
-        
         poJSON = poModel.saveRecord();
-
-        if ("success".equals((String) poJSON.get("result"))) {
-            if (!pbWtParent) {poGRider.commitTrans();}
-        } else {
-            if (!pbWtParent) {poGRider.rollbackTrans();}
-        }
-        
         return poJSON;
     }
 
@@ -288,6 +287,63 @@ public class Inventory_Information implements GRecord {
     @Override
     public Model_Inventory_Information getModel() {
         return poModel;
+    }
+    
+    public JSONObject loadVehicleModel(){
+        JSONObject loJSON = new JSONObject();
+        try {
+            String lsSQL =    " SELECT "                                               
+                            + "   a.sModelIDx "                                        
+                            + " , a.sModelDsc "                                        
+                            + " , a.sMakeIDxx "                                        
+                            + " , a.cRecdStat "                                        
+                            + " , b.sMakeDesc "                                        
+                            + " FROM vehicle_model a "                                 
+                            + " LEFT JOIN vehicle_make b ON b.sMakeIDxx = a.sMakeIDxx ";
+            
+            lsSQL = MiscUtil.addCondition(lsSQL,  " a.cRecdStat = '1' "
+                                                   // + " AND a.sMakeIDxx = " + SQLUtil.toSQL(fsMakeID)
+                                                    + " GROUP BY a.sModelDsc ORDER BY b.sMakeDesc, a.sModelDsc DESC ");
+            
+            
+            System.out.println("LOAD VEHICLE MODEL "+ lsSQL);
+            RowSetFactory factory = RowSetProvider.newFactory();
+            ResultSet loRS = poGRider.executeQuery(lsSQL);
+            try {
+                poVhclModel = factory.createCachedRowSet();
+                poVhclModel.populate(loRS);
+                MiscUtil.close(loRS);
+                loJSON.put("result", "success");
+                loJSON.put("message", "Vehicle Model load successfully.");
+            } catch (SQLException e) {
+                loJSON.put("result", "error");
+                loJSON.put("message", e.getMessage());
+            }
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(Inventory_Information.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return loJSON;
+    }
+    
+    public int getVehicleModelCount() throws SQLException{
+        if (poVhclModel != null){
+            poVhclModel.last();
+            return poVhclModel.getRow();
+        }else{
+            return 0;
+        }
+    }
+    
+    public Object getVehicleModelDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poVhclModel.absolute(fnRow);
+        return poVhclModel.getObject(fnIndex);
+    }
+    
+    public Object getVehicleModelDetail(int fnRow, String fsIndex) throws SQLException{
+        return getVehicleModelDetail(fnRow, MiscUtil.getColumnIndex(poVhclModel, fsIndex));
     }
     
 }

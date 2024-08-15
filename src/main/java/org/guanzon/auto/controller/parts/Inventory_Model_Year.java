@@ -5,190 +5,217 @@
  */
 package org.guanzon.auto.controller.parts;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import org.guanzon.appdriver.base.GRider;
+import org.guanzon.appdriver.base.MiscUtil;
+import org.guanzon.appdriver.base.SQLUtil;
 import org.guanzon.appdriver.constant.EditMode;
 import org.guanzon.appdriver.iface.GRecord;
 import org.guanzon.auto.model.parts.Model_Inventory_Model_Year;
+import org.guanzon.auto.validator.parts.ValidatorFactory;
+import org.guanzon.auto.validator.parts.ValidatorInterface;
 import org.json.simple.JSONObject;
 
 /**
  *
  * @author Arsiela
  */
-public class Inventory_Model_Year implements GRecord {
-
+public class Inventory_Model_Year {
+    final String XML = "Model_Inventory_Model_Year.xml";
     GRider poGRider;
-    boolean pbWthParent;
+    String psBranchCd;
+    boolean pbWtParent;
+    
     int pnEditMode;
-    String psRecdStat;
-
-    Model_Inventory_Model_Year poModel;
-    JSONObject poJSON;
-
-    public Inventory_Model_Year(GRider foGRider, boolean fbWthParent) {
-        poGRider = foGRider;
-        pbWthParent = fbWthParent;
-
-        poModel = new Model_Inventory_Model_Year(foGRider);
-        pnEditMode = EditMode.UNKNOWN;
+    String psMessagex;
+    public JSONObject poJSON;
+    
+    ArrayList<Model_Inventory_Model_Year> paDetail;
+    ArrayList<Model_Inventory_Model_Year> paRemDetail;
+    
+    public Inventory_Model_Year(GRider foAppDrver){
+        poGRider = foAppDrver;
     }
-
-    @Override
+    
     public int getEditMode() {
         return pnEditMode;
     }
 
-    @Override
-    public void setRecordStatus(String fsValue) {
-        psRecdStat = fsValue;
+    public Model_Inventory_Model_Year getVehicleModel(int fnIndex){
+        if (fnIndex > paDetail.size() - 1 || fnIndex < 0) return null;
+        
+        return paDetail.get(fnIndex);
     }
-
-    @Override
-    public JSONObject setMaster(int fnCol, Object foData) {
-        return poModel.setValue(fnCol, foData);
-    }
-
-    @Override
-    public JSONObject setMaster(String fsCol, Object foData) {
-        return poModel.setValue(fsCol, foData);
-    }
-
-    @Override
-    public Object getMaster(int fnCol) {
-        return poModel.getValue(fnCol);
-    }
-
-    @Override
-    public Object getMaster(String fsCol) {
-        return poModel.getValue(fsCol);
-    }
-
-    @Override
-    public JSONObject newRecord() {
-        return poModel.newRecord();
-    }
-
-    @Override
-    public JSONObject openRecord(String fsValue) {
-        return poModel.openRecord(fsValue);
-    }
-
-    @Override
-    public JSONObject updateRecord() {
-        JSONObject loJSON = new JSONObject();
-
-        if (poModel.getEditMode() == EditMode.UPDATE) {
-            loJSON.put("result", "success");
-            loJSON.put("message", "Edit mode has changed to update.");
-        } else {
-            loJSON.put("result", "error");
-            loJSON.put("message", "No record loaded to update.");
+    
+    public JSONObject addDetail(String fsValue){
+        if(paDetail == null){
+           paDetail = new ArrayList<>();
         }
+        
+        poJSON = new JSONObject();
+        if (paDetail.size()<=0){
+            paDetail.add(new Model_Inventory_Model_Year(poGRider));
+            paDetail.get(0).newRecord();
+            
+            paDetail.get(0).setValue("sStockIDx", "");
+            poJSON.put("result", "success");
+            poJSON.put("message", "Add record.");
+        } else {
+            paDetail.add(new Model_Inventory_Model_Year(poGRider));
+            paDetail.get(paDetail.size()-1).newRecord();
+
+            paDetail.get(paDetail.size()-1).setStockID("");
+            poJSON.put("result", "success");
+            poJSON.put("message", "Add record.");
+        }
+        return poJSON;
+    }
+    
+    public JSONObject openDetail(String fsValue){
+        paDetail = new ArrayList<>();
+        paRemDetail = new ArrayList<>();
+        poJSON = new JSONObject();
+        String lsSQL =    " SELECT "                
+                        + "    sStockIDx "        
+                        + "  , sModelCde "       
+                        + "  , nYearModl "        
+                        + " FROM inventory_model_year " ;
+        lsSQL = MiscUtil.addCondition(lsSQL, " sStockIDx = " + SQLUtil.toSQL(fsValue))
+                                                + "  ORDER BY sModelCde, nYearModl ASC " ;
+        System.out.println(lsSQL);
+        ResultSet loRS = poGRider.executeQuery(lsSQL);
+        
+        try {
+            int lnctr = 0;
+            if (MiscUtil.RecordCount(loRS) > 0) {
+                while(loRS.next()){
+                        paDetail.add(new Model_Inventory_Model_Year(poGRider));
+                        paDetail.get(paDetail.size() - 1).openRecord(loRS.getString("sStockIDx"), loRS.getString("sModelCde"), loRS.getInt("nYearModl"));
+                        
+                        pnEditMode = EditMode.UPDATE;
+                        lnctr++;
+                        poJSON.put("result", "success");
+                        poJSON.put("message", "Record loaded successfully.");
+                    } 
+                
+            }else{
+//                paDetail = new ArrayList<>();
+//                addDetail(fsValue);
+                poJSON.put("result", "error");
+                poJSON.put("message", "No record selected.");
+            }
+            MiscUtil.close(loRS);
+        } catch (SQLException e) {
+            poJSON.put("result", "error");
+            poJSON.put("message", e.getMessage());
+        }
+        return poJSON;
+    }
+    
+    public JSONObject saveDetail(String fsValue){
+        JSONObject obj = new JSONObject();
+        
+        int lnCtr;
+        if(paRemDetail != null){
+            int lnRemSize = paRemDetail.size() -1;
+            if(lnRemSize >= 0){
+                for(lnCtr = 0; lnCtr <= lnRemSize; lnCtr++){
+                    obj = paRemDetail.get(lnCtr).deleteRecord();
+                    if("error".equals((String) obj.get("result"))){
+                        return obj;
+                    }
+                }
+            }
+        }
+        
+        if(paDetail == null){
+            obj.put("result", "error");
+            obj.put("continue", true);
+            return obj;
+        }
+        
+        int lnSize = paDetail.size() -1;
+        if(lnSize < 0){
+            obj.put("result", "error");
+            obj.put("continue", true);
+            return obj;
+        }
+        
+        for (lnCtr = 0; lnCtr <= lnSize; lnCtr++){
+            //if(lnCtr>0){
+                if(paDetail.get(lnCtr).getModelCde().isEmpty()){
+                    continue; //skip, instead of removing the actual detail
+//                    paDetail.remove(lnCtr);
+//                    lnCtr++;
+//                    if(lnCtr > lnSize){
+//                        break;
+//                    } 
+                }
+            //}
+            
+            paDetail.get(lnCtr).setStockID(fsValue);
+            
+            ValidatorInterface validator = ValidatorFactory.make(ValidatorFactory.TYPE.Inventory_Model_Year, paDetail.get(lnCtr));
+            validator.setGRider(poGRider);
+            if (!validator.isEntryOkay()){
+                obj.put("result", "error");
+                obj.put("message", validator.getMessage());
+                return obj;
+            }
+            obj = paDetail.get(lnCtr).saveRecord();
+        }    
+        
+        return obj;
+    }
+    
+    public ArrayList<Model_Inventory_Model_Year> getDetailList(){
+        if(paDetail == null){
+           paDetail = new ArrayList<>();
+        }
+        return paDetail;
+    }
+    public void setDetailList(ArrayList<Model_Inventory_Model_Year> foObj){this.paDetail = foObj;}
+    
+    public void setDetail(int fnRow, int fnIndex, Object foValue){ paDetail.get(fnRow).setValue(fnIndex, foValue);}
+    public void setDetail(int fnRow, String fsIndex, Object foValue){ paDetail.get(fnRow).setValue(fsIndex, foValue);}
+    public Object getDetail(int fnRow, int fnIndex){return paDetail.get(fnRow).getValue(fnIndex);}
+    public Object getDetail(int fnRow, String fsIndex){return paDetail.get(fnRow).getValue(fsIndex);}
+    
+    
+    public Object removeDetail(int fnRow){
+        JSONObject loJSON = new JSONObject();
+        
+        if(paDetail.get(fnRow).getStockID()!= null){
+            if(!paDetail.get(fnRow).getStockID().isEmpty()){
+                RemoveDetail(fnRow);
+            }
+        }
+        
+        paDetail.remove(fnRow);
         return loJSON;
     }
-
-    @Override
-    public JSONObject saveRecord() {
-        if (!pbWthParent) {
-            poGRider.beginTrans();
+    
+    private JSONObject RemoveDetail(Integer fnRow){
+        
+        if(paRemDetail == null){
+           paRemDetail = new ArrayList<>();
         }
-
-        poJSON = poModel.saveRecord();
-
-        if ("success".equals((String) poJSON.get("result"))) {
-            if (!pbWthParent) {
-                poGRider.commitTrans();
-            }
-        } else {
-            if (!pbWthParent) {
-                poGRider.rollbackTrans();
-            }
-        }
-        return poJSON;
-    }
-
-    @Override
-    public JSONObject deleteRecord(String string) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public JSONObject deactivateRecord(String fsValue) {
+        
         poJSON = new JSONObject();
-
-        if (poModel.getEditMode() == EditMode.UPDATE) {
-            //poJSON = poModel.setActive(false);
-
-            if ("error".equals((String) poJSON.get("result"))) {
-                return poJSON;
-            }
-
-            poJSON = poModel.saveRecord();
+        if (paRemDetail.size()<=0){
+            paRemDetail.add(new Model_Inventory_Model_Year(poGRider));
+            paRemDetail.get(0).openRecord(paDetail.get(fnRow).getStockID(),paDetail.get(fnRow).getModelCde(),paDetail.get(fnRow).getYearModl());
+            poJSON.put("result", "success");
+            poJSON.put("message", "added to remove record.");
         } else {
-            poJSON = new JSONObject();
-            poJSON.put("result", "error");
-            poJSON.put("message", "No record loaded to update.");
+            paRemDetail.add(new Model_Inventory_Model_Year(poGRider));
+            paRemDetail.get(paRemDetail.size()-1).openRecord(paDetail.get(fnRow).getStockID(),paDetail.get(fnRow).getModelCde(),paDetail.get(fnRow).getYearModl());
+            poJSON.put("result", "success");
+            poJSON.put("message", "added to remove record.");
         }
         return poJSON;
-    }
-
-    @Override
-    public JSONObject activateRecord(String fsValue) {
-        poJSON = new JSONObject();
-
-        if (poModel.getEditMode() == EditMode.UPDATE) {
-            //poJSON = poModel.setActive(true);
-
-            if ("error".equals((String) poJSON.get("result"))) {
-                return poJSON;
-            }
-
-            poJSON = poModel.saveRecord();
-        } else {
-            poJSON = new JSONObject();
-            poJSON.put("result", "error");
-            poJSON.put("message", "No record loaded to update.");
-        }
-        return poJSON;
-    }
-
-    @Override
-    public JSONObject searchRecord(String fsValue, boolean fbByCode) {
-        String lsCondition = "";
-        return poJSON;
-//        if (psRecdStat.length() > 1) {
-//            for (int lnCtr = 0; lnCtr <= psRecdStat.length() - 1; lnCtr++) {
-//                lsCondition += ", " + SQLUtil.toSQL(Character.toString(psRecdStat.charAt(lnCtr)));
-//            }
-//
-//            lsCondition = "cRecdStat IN (" + lsCondition.substring(2) + ")";
-//        } else {
-//            lsCondition = "cRecdStat = " + SQLUtil.toSQL(psRecdStat);
-//        }
-//
-//        String lsSQL = MiscUtil.addCondition(poModel.makeSelectSQL(), " sDescript LIKE "
-//                + SQLUtil.toSQL(fsValue + "%") + " AND " + lsCondition);
-//
-//        poJSON = ShowDialogFX.Search(poGRider,
-//                lsSQL,
-//                fsValue,
-//                "Bar Code»Description",
-//                "sBarCodex»sDescript",
-//                "sBarCodex»sDescript",
-//                fbByCode ? 0 : 1);
-//
-//        if (poJSON != null) {
-//            return poModel.openRecord((String) poJSON.get("sStockIDx"));
-//        } else {
-//            poJSON.put("result", "error");
-//            poJSON.put("message", "No record loaded to update.");
-//            return poJSON;
-//        }
-    }
-
-    @Override
-    public Model_Inventory_Model_Year getModel() {
-        return poModel;
     }
     
     
