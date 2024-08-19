@@ -11,7 +11,10 @@ import org.guanzon.appdriver.base.GRider;
 import org.guanzon.appdriver.constant.EditMode;
 import org.guanzon.appdriver.iface.GRecord;
 import org.guanzon.auto.controller.parameter.Parts_Bin_Master;
+import org.guanzon.auto.controller.parameter.Parts_Brand_Master;
+import org.guanzon.auto.controller.parameter.Parts_InventoryCategory_Master;
 import org.guanzon.auto.controller.parameter.Parts_InventoryType_Master;
+import org.guanzon.auto.controller.parameter.Parts_Measure_Master;
 import org.guanzon.auto.controller.parameter.Parts_Section_Master;
 import org.guanzon.auto.controller.parameter.Parts_Warehouse_Master;
 import org.guanzon.auto.controller.parts.Inventory_Information;
@@ -42,6 +45,9 @@ public class InventoryInformation implements GRecord{
     Parts_Bin_Master poBin;
     Parts_Section_Master poSection;
     Parts_Warehouse_Master poWarehouse;
+    Parts_Brand_Master poBrand;
+    Parts_InventoryCategory_Master poInvCategory;
+    Parts_Measure_Master poMeasure;
     
     public InventoryInformation(GRider foAppDrver, boolean fbWtParent, String fsBranchCd){
         poController = new Inventory_Information(foAppDrver,fbWtParent,fsBranchCd);
@@ -52,6 +58,9 @@ public class InventoryInformation implements GRecord{
         poBin = new Parts_Bin_Master(foAppDrver,fbWtParent,fsBranchCd);
         poSection = new Parts_Section_Master(foAppDrver,fbWtParent,fsBranchCd);
         poWarehouse = new Parts_Warehouse_Master(foAppDrver,fbWtParent,fsBranchCd);
+        poBrand = new Parts_Brand_Master(foAppDrver,fbWtParent,fsBranchCd);
+        poInvCategory = new Parts_InventoryCategory_Master(foAppDrver,fbWtParent,fsBranchCd);
+        poMeasure = new Parts_Measure_Master(foAppDrver,fbWtParent,fsBranchCd);
         
         poGRider = foAppDrver;
         pbWtParent = fbWtParent;
@@ -263,36 +272,69 @@ public class InventoryInformation implements GRecord{
         return poJSON;
     }
     
-    public JSONObject searchBin(String fsValue, boolean fbByActive) {
+    public JSONObject searchBrand(String fsValue, boolean fbByActive) {
         poJSON = new JSONObject();  
-        poJSON = poBin.searchRecord(fsValue, fbByActive);
+        poJSON = poBrand.searchRecord(fsValue, fbByActive);
         if(!"error".equals(poJSON.get("result"))){
-            poController.setMaster("sBinIDxxx", poJSON.get("sBinIDxxx"));
-            poController.setMaster("sBinNamex", poJSON.get("sBinNamex"));
+            poController.setMaster("sBrandCde", poJSON.get("sBrandCde"));
+            poController.setMaster("sBrandNme", poJSON.get("sDescript"));
         }
         
         return poJSON;
     }
     
-    public JSONObject searchSection(String fsValue, boolean fbByActive) {
+    public JSONObject searchInvCategory(String fsValue, boolean fbByActive) {
         poJSON = new JSONObject();  
-        poJSON = poSection.searchRecord(fsValue, fbByActive);
+        poJSON = poInvCategory.searchRecord(fsValue, fbByActive);
         if(!"error".equals(poJSON.get("result"))){
-            poController.setMaster("sSectnIDx", poJSON.get("sSectnIDx"));
-            poController.setMaster("sSectnNme", poJSON.get("sSectnNme"));
+            poController.setMaster("sCategCd1", poJSON.get("sCategCd1"));
+            poController.setMaster("sCatgeDs1", poJSON.get("sDescript"));
         }
         
         return poJSON;
     }
     
-    public JSONObject searchWarehouse(String fsValue, boolean fbByActive) {
+    public JSONObject searchMeasure(String fsValue, boolean fbByActive) {
         poJSON = new JSONObject();  
-        poJSON = poWarehouse.searchRecord(fsValue, fbByActive);
+        poJSON = poMeasure.searchRecord(fsValue, fbByActive);
         if(!"error".equals(poJSON.get("result"))){
-            poController.setMaster("sWHouseID", poJSON.get("sWHouseID"));
-            poController.setMaster("sWHouseNm", poJSON.get("sWHouseNm"));
+            poController.setMaster("sMeasurID", poJSON.get("sMeasurID"));
+            poController.setMaster("sMeasurNm", poJSON.get("sMeasurNm"));
         }
         
         return poJSON;
     }
+    
+//    public JSONObject searchBin(String fsValue, boolean fbByActive) {
+//        poJSON = new JSONObject();  
+//        poJSON = poBin.searchRecord(fsValue, fbByActive);
+//        if(!"error".equals(poJSON.get("result"))){
+//            poController.setMaster("sBinIDxxx", poJSON.get("sBinIDxxx"));
+//            poController.setMaster("sBinNamex", poJSON.get("sBinNamex"));
+//        }
+//        
+//        return poJSON;
+//    }
+//    
+//    public JSONObject searchSection(String fsValue, boolean fbByActive) {
+//        poJSON = new JSONObject();  
+//        poJSON = poSection.searchRecord(fsValue, fbByActive);
+//        if(!"error".equals(poJSON.get("result"))){
+//            poController.setMaster("sSectnIDx", poJSON.get("sSectnIDx"));
+//            poController.setMaster("sSectnNme", poJSON.get("sSectnNme"));
+//        }
+//        
+//        return poJSON;
+//    }
+//    
+//    public JSONObject searchWarehouse(String fsValue, boolean fbByActive) {
+//        poJSON = new JSONObject();  
+//        poJSON = poWarehouse.searchRecord(fsValue, fbByActive);
+//        if(!"error".equals(poJSON.get("result"))){
+//            poController.setMaster("sWHouseID", poJSON.get("sWHouseID"));
+//            poController.setMaster("sWHouseNm", poJSON.get("sWHouseNm"));
+//        }
+//        
+//        return poJSON;
+//    }
 }

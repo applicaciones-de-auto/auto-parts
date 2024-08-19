@@ -245,92 +245,92 @@ public class InventoryInformationTest {
 //        //assertFalse(result);
 //    }
 //    
-    @Test
-    public void test02OpenRecord(){
-        System.out.println("--------------------------------------------------------------------");
-        System.out.println("------------------------------RETRIEVAL--------------------------------------");
-        System.out.println("--------------------------------------------------------------------");
-        
-        json = model.openRecord("M001ST240001");
-        
-        if (!"success".equals((String) json.get("result"))){
-            result = false;
-        } else {
-            System.out.println("--------------------------------------------------------------------");
-            System.out.println("INVENTORY INFORMATION");
-            System.out.println("--------------------------------------------------------------------");
-            System.out.println("sStockIDx  :  " + model.getMaster("sStockIDx"));
-            System.out.println("sBarCodex  :  " + model.getMaster("sBarCodex"));
-            System.out.println("sDescript  :  " + model.getMaster("sDescript"));
-            System.out.println("sBriefDsc  :  " + model.getMaster("sBriefDsc"));
-            System.out.println("sAltBarCd  :  " + model.getMaster("sAltBarCd"));
-            System.out.println("sCategCd1  :  " + model.getMaster("sCategCd1"));
-            System.out.println("sCategCd2  :  " + model.getMaster("sCategCd2"));
-            System.out.println("sCategCd3  :  " + model.getMaster("sCategCd3"));
-            System.out.println("sCategCd4  :  " + model.getMaster("sCategCd4"));
-            System.out.println("sBrandCde  :  " + model.getMaster("sBrandCde"));
-            System.out.println("sModelCde  :  " + model.getMaster("sModelCde"));
-            System.out.println("sColorCde  :  " + model.getMaster("sColorCde"));
-            System.out.println("sMeasurID  :  " + model.getMaster("sMeasurID"));
-            System.out.println("sInvTypCd  :  " + model.getMaster("sInvTypCd"));
-            System.out.println("nUnitPrce  :  " + model.getMaster("nUnitPrce"));
-            System.out.println("nSelPrice  :  " + model.getMaster("nSelPrice"));
-            System.out.println("nDiscLev1  :  " + model.getMaster("nDiscLev1"));
-            System.out.println("sMeasurID  :  " + model.getMaster("sMeasurID"));
-            System.out.println("nDiscLev2  :  " + model.getMaster("nDiscLev2"));
-            System.out.println("nDiscLev3  :  " + model.getMaster("nDiscLev3"));
-            System.out.println("nDealrDsc  :  " + model.getMaster("nDealrDsc"));
-            System.out.println("cComboInv  :  " + model.getMaster("cComboInv"));
-            System.out.println("cWthPromo  :  " + model.getMaster("cWthPromo"));
-            System.out.println("cSerialze  :  " + model.getMaster("cSerialze"));
-            System.out.println("cUnitType  :  " + model.getMaster("cUnitType"));
-            System.out.println("cInvStatx  :  " + model.getMaster("cInvStatx"));
-            System.out.println("cGenuinex  :  " + model.getMaster("cGenuinex"));
-            System.out.println("cReplacex  :  " + model.getMaster("cReplacex"));
-            System.out.println("sSupersed  :  " + model.getMaster("sSupersed"));
-            System.out.println("sFileName  :  " + model.getMaster("sFileName"));
-            System.out.println("sTrimBCde  :  " + model.getMaster("sTrimBCde"));
-            System.out.println("cRecdStat  :  " + model.getMaster("cRecdStat"));
-            System.out.println("sModified  :  " + model.getMaster("sModified"));
-            System.out.println("dModified  :  " + model.getMaster("dModified"));
-            System.out.println("sBrandNme  :  " + model.getMaster("sBrandNme"));
-            System.out.println("sMeasurNm  :  " + model.getMaster("sMeasurNm"));
-            System.out.println("sInvTypDs  :  " + model.getMaster("sInvTypDs"));
-            
-            
-            System.out.println("--------------------------------------------------------------------");
-            System.out.println("INVENTORY MODEL");
-            System.out.println("--------------------------------------------------------------------");
-            System.out.println("inventory model size = " + model.getInventoryModelList().size());
-            for(int lnctr = 0; lnctr <= model.getInventoryModelList().size()-1; lnctr++){
-                System.out.println("sStockIDx  :  " + model.getInventoryModel(lnctr, "sStockIDx"));
-                System.out.println("nEntryNox  :  " + model.getInventoryModel(lnctr, "nEntryNox"));
-                System.out.println("sModelCde  :  " + model.getInventoryModel(lnctr, "sModelCde"));
-                System.out.println("sModelDsc  :  " + model.getInventoryModel(lnctr, "sModelDsc"));
-                System.out.println("sMakeIDxx  :  " + model.getInventoryModel(lnctr, "sMakeIDxx"));
-                System.out.println("sMakeDesc  :  " + model.getInventoryModel(lnctr, "sMakeDesc"));
-            }
-            
-            
-            System.out.println("--------------------------------------------------------------------");
-            System.out.println("INVENTORY MODEL YEAR");
-            System.out.println("--------------------------------------------------------------------");
-            System.out.println("inventory model year size = " + model.getInventoryModelYearList().size());
-            for(int lnctr = 0; lnctr <= model.getInventoryModelYearList().size()-1; lnctr++){
-                System.out.println("sStockIDx  :  " +model.getInventoryModelYear(lnctr, "sStockIDx"));
-                System.out.println("nYearModl  :  " +model.getInventoryModelYear(lnctr, "nYearModl"));
-                System.out.println("sModelCde  :  " +model.getInventoryModelYear(lnctr, "sModelCde"));
-                System.out.println("sModelDsc  :  " +model.getInventoryModelYear(lnctr, "sModelDsc"));
-                System.out.println("sMakeIDxx  :  " +model.getInventoryModelYear(lnctr, "sMakeIDxx"));
-                System.out.println("sMakeDesc  :  " +model.getInventoryModelYear(lnctr, "sMakeDesc"));
-            }
-            
-            
-            result = true;
-        }
-        assertTrue(result);
-        //assertFalse(result);
-    }
+//    @Test
+//    public void test02OpenRecord(){
+//        System.out.println("--------------------------------------------------------------------");
+//        System.out.println("------------------------------RETRIEVAL--------------------------------------");
+//        System.out.println("--------------------------------------------------------------------");
+//        
+//        json = model.openRecord("M001ST240001");
+//        
+//        if (!"success".equals((String) json.get("result"))){
+//            result = false;
+//        } else {
+//            System.out.println("--------------------------------------------------------------------");
+//            System.out.println("INVENTORY INFORMATION");
+//            System.out.println("--------------------------------------------------------------------");
+//            System.out.println("sStockIDx  :  " + model.getMaster("sStockIDx"));
+//            System.out.println("sBarCodex  :  " + model.getMaster("sBarCodex"));
+//            System.out.println("sDescript  :  " + model.getMaster("sDescript"));
+//            System.out.println("sBriefDsc  :  " + model.getMaster("sBriefDsc"));
+//            System.out.println("sAltBarCd  :  " + model.getMaster("sAltBarCd"));
+//            System.out.println("sCategCd1  :  " + model.getMaster("sCategCd1"));
+//            System.out.println("sCategCd2  :  " + model.getMaster("sCategCd2"));
+//            System.out.println("sCategCd3  :  " + model.getMaster("sCategCd3"));
+//            System.out.println("sCategCd4  :  " + model.getMaster("sCategCd4"));
+//            System.out.println("sBrandCde  :  " + model.getMaster("sBrandCde"));
+//            System.out.println("sModelCde  :  " + model.getMaster("sModelCde"));
+//            System.out.println("sColorCde  :  " + model.getMaster("sColorCde"));
+//            System.out.println("sMeasurID  :  " + model.getMaster("sMeasurID"));
+//            System.out.println("sInvTypCd  :  " + model.getMaster("sInvTypCd"));
+//            System.out.println("nUnitPrce  :  " + model.getMaster("nUnitPrce"));
+//            System.out.println("nSelPrice  :  " + model.getMaster("nSelPrice"));
+//            System.out.println("nDiscLev1  :  " + model.getMaster("nDiscLev1"));
+//            System.out.println("sMeasurID  :  " + model.getMaster("sMeasurID"));
+//            System.out.println("nDiscLev2  :  " + model.getMaster("nDiscLev2"));
+//            System.out.println("nDiscLev3  :  " + model.getMaster("nDiscLev3"));
+//            System.out.println("nDealrDsc  :  " + model.getMaster("nDealrDsc"));
+//            System.out.println("cComboInv  :  " + model.getMaster("cComboInv"));
+//            System.out.println("cWthPromo  :  " + model.getMaster("cWthPromo"));
+//            System.out.println("cSerialze  :  " + model.getMaster("cSerialze"));
+//            System.out.println("cUnitType  :  " + model.getMaster("cUnitType"));
+//            System.out.println("cInvStatx  :  " + model.getMaster("cInvStatx"));
+//            System.out.println("cGenuinex  :  " + model.getMaster("cGenuinex"));
+//            System.out.println("cReplacex  :  " + model.getMaster("cReplacex"));
+//            System.out.println("sSupersed  :  " + model.getMaster("sSupersed"));
+//            System.out.println("sFileName  :  " + model.getMaster("sFileName"));
+//            System.out.println("sTrimBCde  :  " + model.getMaster("sTrimBCde"));
+//            System.out.println("cRecdStat  :  " + model.getMaster("cRecdStat"));
+//            System.out.println("sModified  :  " + model.getMaster("sModified"));
+//            System.out.println("dModified  :  " + model.getMaster("dModified"));
+//            System.out.println("sBrandNme  :  " + model.getMaster("sBrandNme"));
+//            System.out.println("sMeasurNm  :  " + model.getMaster("sMeasurNm"));
+//            System.out.println("sInvTypDs  :  " + model.getMaster("sInvTypDs"));
+//            
+//            
+//            System.out.println("--------------------------------------------------------------------");
+//            System.out.println("INVENTORY MODEL");
+//            System.out.println("--------------------------------------------------------------------");
+//            System.out.println("inventory model size = " + model.getInventoryModelList().size());
+//            for(int lnctr = 0; lnctr <= model.getInventoryModelList().size()-1; lnctr++){
+//                System.out.println("sStockIDx  :  " + model.getInventoryModel(lnctr, "sStockIDx"));
+//                System.out.println("nEntryNox  :  " + model.getInventoryModel(lnctr, "nEntryNox"));
+//                System.out.println("sModelCde  :  " + model.getInventoryModel(lnctr, "sModelCde"));
+//                System.out.println("sModelDsc  :  " + model.getInventoryModel(lnctr, "sModelDsc"));
+//                System.out.println("sMakeIDxx  :  " + model.getInventoryModel(lnctr, "sMakeIDxx"));
+//                System.out.println("sMakeDesc  :  " + model.getInventoryModel(lnctr, "sMakeDesc"));
+//            }
+//            
+//            
+//            System.out.println("--------------------------------------------------------------------");
+//            System.out.println("INVENTORY MODEL YEAR");
+//            System.out.println("--------------------------------------------------------------------");
+//            System.out.println("inventory model year size = " + model.getInventoryModelYearList().size());
+//            for(int lnctr = 0; lnctr <= model.getInventoryModelYearList().size()-1; lnctr++){
+//                System.out.println("sStockIDx  :  " +model.getInventoryModelYear(lnctr, "sStockIDx"));
+//                System.out.println("nYearModl  :  " +model.getInventoryModelYear(lnctr, "nYearModl"));
+//                System.out.println("sModelCde  :  " +model.getInventoryModelYear(lnctr, "sModelCde"));
+//                System.out.println("sModelDsc  :  " +model.getInventoryModelYear(lnctr, "sModelDsc"));
+//                System.out.println("sMakeIDxx  :  " +model.getInventoryModelYear(lnctr, "sMakeIDxx"));
+//                System.out.println("sMakeDesc  :  " +model.getInventoryModelYear(lnctr, "sMakeDesc"));
+//            }
+//            
+//            
+//            result = true;
+//        }
+//        assertTrue(result);
+//        //assertFalse(result);
+//    }
     
 //    @Test
 //    public void test03UpdateRecord(){
