@@ -5,8 +5,15 @@
  */
 package org.guanzon.auto.main.parts;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.sql.rowset.RowSetFactory;
+import javax.sql.rowset.RowSetProvider;
 import org.guanzon.appdriver.base.GRider;
 import org.guanzon.appdriver.constant.EditMode;
 import org.guanzon.appdriver.iface.GRecord;
@@ -224,26 +231,26 @@ public class InventoryInformation implements GRecord{
     }
     
     public ArrayList getInventoryModelList(){return poInventoryModel.getDetailList();}
-    public void setInventoryModelList(ArrayList foObj){this.poInventoryModel.setDetailList(foObj);}
+    private void setInventoryModelList(ArrayList foObj){this.poInventoryModel.setDetailList(foObj);}
     
-    public void setInventoryModel(int fnRow, int fnIndex, Object foValue){ poInventoryModel.setDetail(fnRow, fnIndex, foValue);}
-    public void setInventoryModel(int fnRow, String fsIndex, Object foValue){ poInventoryModel.setDetail(fnRow, fsIndex, foValue);}
+    private void setInventoryModel(int fnRow, int fnIndex, Object foValue){ poInventoryModel.setDetail(fnRow, fnIndex, foValue);}
+    private void setInventoryModel(int fnRow, String fsIndex, Object foValue){ poInventoryModel.setDetail(fnRow, fsIndex, foValue);}
     public Object getInventoryModel(int fnRow, int fnIndex){return poInventoryModel.getDetail(fnRow, fnIndex);}
     public Object getInventoryModel(int fnRow, String fsIndex){return poInventoryModel.getDetail(fnRow, fsIndex);}
     
-    public Object addInventoryModel(){ return poInventoryModel.addDetail(poController.getModel().getStockID());}
-    public Object removeInventoryModel(int fnRow){ return poInventoryModel.removeDetail(fnRow);}
+    private Object addInventoryModel(){ return poInventoryModel.addDetail(poController.getModel().getStockID());}
+    private Object removeInventoryModel(int fnRow){ return poInventoryModel.removeDetail(fnRow);}
     
-    public ArrayList getInventoryModelYearList(){return poInventoryModel.getDetailList();}
-    public void setInventoryModelYearList(ArrayList foObj){this.poInventoryModel.setDetailList(foObj);}
+    public ArrayList getInventoryModelYearList(){return poInventoryModelYear.getDetailList();}
+    private void setInventoryModelYearList(ArrayList foObj){this.poInventoryModelYear.setDetailList(foObj);}
     
-    public void setInventoryModelYear(int fnRow, int fnIndex, Object foValue){ poInventoryModelYear.setDetail(fnRow, fnIndex, foValue);}
-    public void setInventoryModelYear(int fnRow, String fsIndex, Object foValue){ poInventoryModelYear.setDetail(fnRow, fsIndex, foValue);}
+    private void setInventoryModelYear(int fnRow, int fnIndex, Object foValue){ poInventoryModelYear.setDetail(fnRow, fnIndex, foValue);}
+    private void setInventoryModelYear(int fnRow, String fsIndex, Object foValue){ poInventoryModelYear.setDetail(fnRow, fsIndex, foValue);}
     public Object getInventoryModelYear(int fnRow, int fnIndex){return poInventoryModelYear.getDetail(fnRow, fnIndex);}
     public Object getInventoryModelYear(int fnRow, String fsIndex){return poInventoryModelYear.getDetail(fnRow, fsIndex);}
     
-    public Object addInventoryModelYear(){ return poInventoryModelYear.addDetail(poController.getModel().getStockID());}
-    public Object removeInventoryModelYear(int fnRow){ return poInventoryModelYear.removeDetail(fnRow);}
+    private Object addInventoryModelYear(){ return poInventoryModelYear.addDetail(poController.getModel().getStockID());}
+    private Object removeInventoryModelYear(int fnRow){ return poInventoryModelYear.removeDetail(fnRow);}
     
     public JSONObject loadModel() {
         return poController.loadVehicleModel();
@@ -260,6 +267,206 @@ public class InventoryInformation implements GRecord{
     public Object getModelDetail(int fnRow, String fsIndex) throws SQLException{
         return poController.getVehicleModelDetail(fnRow, fsIndex);
     }
+    
+    /**
+    ***Adds an inventory model or inventory model year to the database.
+    *@param fsModelID The code of the inventory model to be added.
+    *@param fsModelDesc The description of the inventory model to be added.
+    *@param fsMakeID The code of the make of the inventory model make to be added.
+    *@param fsMakeDesc The description of the make of the inventory model to be added.
+    *@param fnYear The year of the model to be added (applicable if fbIsModelOnly is false).
+    *@param fbIsModelOnly {@code true} if only the inventory model is to be added, {@code false} if the model year is to be added.
+    *@return {@code true} if the inventory model or model year was successfully added, {@code false} otherwise.
+    */
+    public JSONObject addInvModel_Year(String fsModelID, String fsModelDesc, String fsMakeID, String fsMakeDesc, Integer fnYear, boolean fbIsModelOnly){
+        JSONObject loJSON = new JSONObject();
+        int lnCtr;
+        if (fsModelID.equals("")){
+            loJSON.put("result", "error");
+            loJSON.put("message", "Please select Vehicle Model.");
+            return loJSON;
+        }
+        
+        for (lnCtr = 0; lnCtr <= getInventoryModelList().size()-1; lnCtr++){
+            if (fsModelDesc.equals("COMMON") && getInventoryModel(lnCtr,"sModelDsc").equals("COMMON") ){
+                loJSON.put("result", "error");
+                loJSON.put("message", "COMMON already exist.");
+                return loJSON;
+            }
+        }
+        
+        if (fsModelDesc.equals("COMMON") && (getInventoryModelList().size()-1 >= 0 || getInventoryModelYearList().size()-1 >= 0)){
+            loJSON.put("result", "error");
+            loJSON.put("message",  "Cannot add a common vehicle model when other models exist in Inventory Model/Year.");
+            return loJSON;
+        }
+        
+        if (fsModelDesc.equals("COMMON") && !fnYear.equals(0) ){
+            loJSON.put("result", "error");
+            loJSON.put("message",  "Cannot add a common vehicle model with Year Model.");
+            return loJSON;
+        }
+        
+        if(fbIsModelOnly){
+            //Validate Model
+            for (lnCtr = 0; lnCtr <= getInventoryModelList().size()-1; lnCtr++){
+
+                if (fsModelID.equals(getInventoryModel(lnCtr,"sModelCde"))){
+                    loJSON.put("result", "error");
+                    loJSON.put("message",  "Skipping, Failed to add Vehicle Model " + fsModelDesc + " already exist.");
+                    return loJSON;
+                }  
+                
+                if (getInventoryModel(lnCtr,"sModelDsc").equals("COMMON")){
+                    loJSON.put("result", "error");
+                    loJSON.put("message",  "You cannot add other vehicle model");
+                    return loJSON;
+                }
+            }
+            
+            for (lnCtr = 0; lnCtr <= getInventoryModelYearList().size()-1; lnCtr++){
+                if (fsModelID.equals(getInventoryModelYear(lnCtr,"sModelCde"))
+                        && (Integer) getInventoryModelYear(lnCtr,"nYearModl") != 0 ){
+                    loJSON.put("result", "error");
+                    loJSON.put("message",  "Skipping, Failed to add Vehicle Model " + fsModelDesc + " already exist with Year Model.");
+                    return loJSON;
+                }
+            }
+            
+            addInventoryModel();
+            setInventoryModel(getInventoryModelList().size()-1,"sModelCde",fsModelID);
+            setInventoryModel(getInventoryModelList().size()-1,"sModelDsc",fsModelDesc);
+            setInventoryModel(getInventoryModelList().size()-1,"sMakeIDxx",fsMakeID);
+            setInventoryModel(getInventoryModelList().size()-1,"sMakeDesc",fsMakeDesc);
+            
+            addInventoryModelYear();
+            setInventoryModelYear(getInventoryModelYearList().size()-1,"sModelCde",fsModelID);
+            setInventoryModelYear(getInventoryModelYearList().size()-1,"sModelDsc",fsModelDesc);
+            setInventoryModelYear(getInventoryModelYearList().size()-1,"sMakeIDxx",fsMakeID);
+            setInventoryModelYear(getInventoryModelYearList().size()-1,"sMakeDesc",fsMakeDesc);
+            setInventoryModelYear(getInventoryModelYearList().size()-1,"nYearModl",0);
+        } else {
+            //Validate Model Year
+            for (lnCtr = 0; lnCtr <= getInventoryModelYearList().size()-1; lnCtr++){
+                if (fsModelID.equals(getInventoryModelYear(lnCtr,"sModelCde"))
+                        && fnYear.equals(getInventoryModelYear(lnCtr,"nYearModl"))){
+                    loJSON.put("result", "error");
+                    loJSON.put("message",  "Skipping, Failed to add Vehicle Model " + fsModelDesc + " - " + String.valueOf(fnYear) + " already exist.");
+                    return loJSON;
+                }
+                
+                if (fsModelID.equals(getInventoryModelYear(lnCtr,"sModelCde"))
+                        && (Integer) getInventoryModelYear(lnCtr,"nYearModl") == 0 ){
+                    loJSON.put("result", "error");
+                    loJSON.put("message",  "Skipping, Failed to add Vehicle Model " + fsModelDesc + " already exist without Year Model.");
+                    return loJSON;
+                }
+                
+                if (getInventoryModelYear(lnCtr,"sModelDsc").equals("COMMON")){
+                    loJSON.put("result", "error");
+                    loJSON.put("message", "You cannot add other vehicle model");
+                    return loJSON;
+                }
+            }
+            
+//            for (lnCtr = 0; lnCtr <= getInventoryModelList().size()-1; lnCtr++){
+//                if (fsModelID.equals(getInventoryModel(lnCtr,"sModelCde"))){
+//                    loJSON.put("result", "error");
+//                    loJSON.put("message",  "Skipping, Failed to add Year Model " + fsModelDesc + " - " + String.valueOf(fnYear) + " already exist without Year Model.");
+//                    return loJSON;
+//                }
+//                
+//                if (getInventoryModel(lnCtr,"sModelDsc").equals("COMMON")){
+//                    loJSON.put("result", "error");
+//                    loJSON.put("message", "You cannot add other vehicle model");
+//                    return loJSON;
+//                }
+//            }
+            
+            addInventoryModelYear();
+            setInventoryModelYear(getInventoryModelYearList().size()-1,"sModelCde",fsModelID);
+            setInventoryModelYear(getInventoryModelYearList().size()-1,"sModelDsc",fsModelDesc);
+            setInventoryModelYear(getInventoryModelYearList().size()-1,"sMakeIDxx",fsMakeID);
+            setInventoryModelYear(getInventoryModelYearList().size()-1,"sMakeDesc",fsMakeDesc);
+            setInventoryModelYear(getInventoryModelYearList().size()-1,"nYearModl",fnYear);
+            
+            boolean lbCheckExistMdl = false;
+            for (lnCtr = 0; lnCtr <= getInventoryModelList().size()-1; lnCtr++){
+                if (fsModelID.equals(getInventoryModel(lnCtr,"sModelCde"))){
+                    lbCheckExistMdl = true;
+                    break;
+                }
+                
+            }
+            
+            //Add inventory model
+            if(!lbCheckExistMdl){
+                addInventoryModel();
+                setInventoryModel(getInventoryModelList().size()-1,"sModelCde",fsModelID);
+                setInventoryModel(getInventoryModelList().size()-1,"sModelDsc",fsModelDesc);
+                setInventoryModel(getInventoryModelList().size()-1,"sMakeIDxx",fsMakeID);
+                setInventoryModel(getInventoryModelList().size()-1,"sMakeDesc",fsMakeDesc);
+            }
+        }
+        
+        return loJSON;
+    }
+    
+    /**
+    * Removes selected inventory models and model years from the cache and database.
+    * 
+    * @param fsInvModel Inventory Model Code: to be Removed
+    * @param fnRowModelYr Inventory Model Year: An array for inventory model year per model code
+    * @return {@code true} if the removal was successful, {@code false} otherwise.
+    */
+    public JSONObject removeInvModel_Year(String fsInvModel, Integer fnRowModelYr[]) {
+        JSONObject loJSON = new JSONObject();
+        if (getInventoryModelYearList().size()-1 < 0 && getInventoryModelList().size()-1 <= 0) {
+            loJSON.put("result", "error");
+            loJSON.put("message", "No Vehicle Model / Year to delete.");
+            return loJSON;
+        }
+        
+        int fnYear = 0;
+        boolean lbExistMdlCd = false;
+        if(fnRowModelYr.length != 0){
+            //Remove Inventory Model Year
+            for (int lnRow : fnRowModelYr){
+                fnYear = fnRowModelYr[lnRow];
+                for(int lnCtr = 0; lnCtr <= getInventoryModelYearList().size()-1; lnCtr++ ){
+                    if(String.valueOf(getInventoryModelYear(lnCtr,"sModelCde")).equals(fsInvModel)){
+                        if(String.valueOf(getInventoryModelYear(lnCtr,"nYearModl")).equals(String.valueOf(fnYear))){
+                            removeInventoryModelYear(lnCtr);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            //Check if Model Code is Still exist in Inventory Model Year, if not exist the remove it in inventory model
+            for(int lnCtr = 0; lnCtr <= getInventoryModelYearList().size()-1; lnCtr++ ){
+                if(String.valueOf(getInventoryModelYear(lnCtr,"sModelCde")).equals(fsInvModel)){
+                    lbExistMdlCd = true;
+                    break;
+                }
+            }
+        }
+        
+        //Remove Inventory Model
+        if(!lbExistMdlCd){
+            for(int lnCtr = 0; lnCtr <= getInventoryModelList().size()-1; lnCtr++ ){
+                if(String.valueOf(getInventoryModel(lnCtr,"sModelCde")).equals(fsInvModel)){
+                    removeInventoryModel(lnCtr);
+                    break;
+                }
+            }
+        }
+
+        loJSON.put("result", "success");
+        loJSON.put("message", "Inventory Model/Year successfully removed.");
+        return loJSON;
+    }
+    
     
     public JSONObject searchInvType(String fsValue, boolean fbByActive) {
         poJSON = new JSONObject();  
