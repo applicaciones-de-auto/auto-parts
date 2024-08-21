@@ -153,6 +153,8 @@ public class Inventory_Information implements GRecord {
     @Override
     public JSONObject saveRecord(){
         
+        poModel.setTrimBCde(poModel.getBarCode().replace(" ", ""));
+        
         ValidatorInterface validator = ValidatorFactory.make( ValidatorFactory.TYPE.Inventory_Information, poModel);
         validator.setGRider(poGRider);
         if (!validator.isEntryOkay()){
@@ -258,10 +260,10 @@ public class Inventory_Information implements GRecord {
                         + " LEFT JOIN inventory_category e ON e.sCategrCd = a.sCategCd1 "         ;
         
         if(fbByActive){
-            lsSQL = MiscUtil.addCondition(lsSQL,  " sDescript LIKE " + SQLUtil.toSQL(fsValue + "%")
-                                                    + " AND cRecdStat = '1' ");
+            lsSQL = MiscUtil.addCondition(lsSQL,  " a.sDescript LIKE " + SQLUtil.toSQL(fsValue + "%")
+                                                    + " AND a.cRecdStat = '1' ");
         } else {
-            lsSQL = MiscUtil.addCondition(lsSQL,  " sDescript LIKE " + SQLUtil.toSQL(fsValue + "%"));
+            lsSQL = MiscUtil.addCondition(lsSQL,  " a.sDescript LIKE " + SQLUtil.toSQL(fsValue + "%"));
         }
         
         System.out.println("SEARCH INVENTORY INFORMATION: " + lsSQL);
@@ -270,7 +272,7 @@ public class Inventory_Information implements GRecord {
                 fsValue,
                 "Stock ID»Barcode»Description",
                 "sStockIDx»sBarCodex»sDescript",
-                "sStockIDx»sBarCodex»sDescript",
+                "a.sStockIDx»a.sBarCodex»a.sDescript",
                 1);
 
         if (loJSON != null) {

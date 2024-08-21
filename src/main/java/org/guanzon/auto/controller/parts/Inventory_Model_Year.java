@@ -145,7 +145,7 @@ public class Inventory_Model_Year {
         
         for (lnCtr = 0; lnCtr <= lnSize; lnCtr++){
             //if(lnCtr>0){
-                if(paDetail.get(lnCtr).getModelCde().isEmpty()){
+                if(paDetail.get(lnCtr).getYearModl() == 0){
                     continue; //skip, instead of removing the actual detail
 //                    paDetail.remove(lnCtr);
 //                    lnCtr++;

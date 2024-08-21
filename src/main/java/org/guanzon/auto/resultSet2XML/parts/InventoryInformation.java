@@ -48,7 +48,6 @@ public class InventoryInformation {
                         + "  , a.sCategCd3 "                                   
                         + "  , a.sCategCd4 "                                   
                         + "  , a.sBrandCde "                                   
-                        + "  , a.sModelCde "                                   
                         + "  , a.sColorCde "                                   
                         + "  , a.sMeasurID "                                   
                         + "  , a.sInvTypCd "                                   

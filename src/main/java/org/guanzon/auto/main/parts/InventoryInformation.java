@@ -148,6 +148,12 @@ public class InventoryInformation implements GRecord{
             return poJSON;
         }
         
+        poJSON = poInventoryModelYear.openDetail(fsValue);
+        if(!"success".equals(poJSON.get("result"))){
+            pnEditMode = EditMode.UNKNOWN;
+            return poJSON;
+        }
+        
         return poJSON;
     }
 
@@ -427,12 +433,10 @@ public class InventoryInformation implements GRecord{
             return loJSON;
         }
         
-        int fnYear = 0;
         boolean lbExistMdlCd = false;
         if(fnRowModelYr.length != 0){
             //Remove Inventory Model Year
-            for (int lnRow : fnRowModelYr){
-                fnYear = fnRowModelYr[lnRow];
+            for (int fnYear : fnRowModelYr){
                 for(int lnCtr = 0; lnCtr <= getInventoryModelYearList().size()-1; lnCtr++ ){
                     if(String.valueOf(getInventoryModelYear(lnCtr,"sModelCde")).equals(fsInvModel)){
                         if(String.valueOf(getInventoryModelYear(lnCtr,"nYearModl")).equals(String.valueOf(fnYear))){
@@ -494,7 +498,7 @@ public class InventoryInformation implements GRecord{
         poJSON = new JSONObject();  
         poJSON = poInvCategory.searchRecord(fsValue, fbByActive);
         if(!"error".equals(poJSON.get("result"))){
-            poController.setMaster("sCategCd1", poJSON.get("sCategCd1"));
+            poController.setMaster("sCategCd1", poJSON.get("sCategrCd"));
             poController.setMaster("sCatgeDs1", poJSON.get("sDescript"));
         }
         
