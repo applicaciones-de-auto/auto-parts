@@ -348,4 +348,48 @@ public class Inventory_Information implements GRecord {
         return getVehicleModelDetail(fnRow, MiscUtil.getColumnIndex(poVhclModel, fsIndex));
     }
     
+    public JSONObject checkExistingRecord(){
+        JSONObject loJSON = new JSONObject();
+        //Check Existing BARCODE
+        try {
+            String lsID = "";
+            String lsDesc = "";
+            String lsSQL = "";
+                lsSQL =   " SELECT "         
+                        + "   sStockIDx "    
+                        + " , sBarCodex "    
+                        + " , sDescript "    
+                        + " , sBriefDsc "    
+                        + " , sAltBarCd "    
+                        + " , sTrimBCde "    
+                        + " , cRecdStat "    
+                        + " FROM inventory "  ;
+                lsSQL = MiscUtil.addCondition(lsSQL, " ( sBarCodex = " + SQLUtil.toSQL(poModel.getBarCode()) 
+                                                        + " OR sTrimBCde = " + SQLUtil.toSQL(poModel.getTrimBCde()) 
+                                                        + ") AND sStockIDx <> " + SQLUtil.toSQL(poModel.getStockID()) 
+                                                        );
+                System.out.println("EXISTING sBarCodex CHECK: " + lsSQL);
+                ResultSet loRS = poGRider.executeQuery(lsSQL);
+
+                if (MiscUtil.RecordCount(loRS) > 0){
+                    while(loRS.next()){
+                        lsID = loRS.getString("sStockIDx");
+                        lsDesc = loRS.getString("sDescript");
+                    }
+
+                    MiscUtil.close(loRS);
+                    loJSON.put("result", "error");
+                    loJSON.put("sStockIDx", lsID);
+                    loJSON.put("message", "Barcode is already exist."
+                                            + "\n\n<Stock ID:" + lsID + ">"
+                                            + "\n<Description:" + lsDesc + ">"
+                                            + "\n\nDo you want to open the record?");
+                    return loJSON;
+                } 
+        } catch (SQLException ex) {
+            Logger.getLogger(Inventory_Information.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return loJSON;
+    }
 }

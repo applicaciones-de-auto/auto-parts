@@ -104,6 +104,7 @@ public class Inventory_Model_Year {
 //                paDetail = new ArrayList<>();
 //                addDetail(fsValue);
                 poJSON.put("result", "error");
+                poJSON.put("continue", true);
                 poJSON.put("message", "No record selected.");
             }
             MiscUtil.close(loRS);
@@ -144,6 +145,13 @@ public class Inventory_Model_Year {
         }
         
         for (lnCtr = 0; lnCtr <= lnSize; lnCtr++){
+            //Do not save the year when common is exist
+            if(paDetail.get(lnCtr).getModelDsc().equals("COMMON")){
+                obj.put("result", "error");
+                obj.put("continue", true);
+                return obj;
+            }
+            
             //if(lnCtr>0){
                 if(paDetail.get(lnCtr).getYearModl() == 0){
                     continue; //skip, instead of removing the actual detail

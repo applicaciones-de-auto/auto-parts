@@ -143,17 +143,18 @@ public class InventoryInformation implements GRecord{
         }
         
         poJSON = poInventoryModel.openDetail(fsValue);
-        if(!"success".equals(poJSON.get("result"))){
+        if(!"success".equals((String)checkData(poJSON).get("result"))){
             pnEditMode = EditMode.UNKNOWN;
             return poJSON;
         }
         
         poJSON = poInventoryModelYear.openDetail(fsValue);
-        if(!"success".equals(poJSON.get("result"))){
+        if(!"success".equals((String)checkData(poJSON).get("result"))){
             pnEditMode = EditMode.UNKNOWN;
             return poJSON;
         }
         
+        checkCommonExist();
         return poJSON;
     }
 
@@ -272,6 +273,30 @@ public class InventoryInformation implements GRecord{
     
     public Object getModelDetail(int fnRow, String fsIndex) throws SQLException{
         return poController.getVehicleModelDetail(fnRow, fsIndex);
+    }
+    
+    private void checkCommonExist(){
+        boolean lbCommonExist = false;
+        String lsModelDesc = "";
+        String lsModelCde = "";
+        for(int lnCtr = 0; lnCtr <= getInventoryModelList().size() - 1; lnCtr++){
+            lsModelDesc = String.valueOf(getInventoryModel( lnCtr, "sModelDsc"));
+            lsModelCde = String.valueOf(getInventoryModel( lnCtr, "sModelCde"));
+            
+            if(lsModelDesc.equals("COMMON")){
+                lbCommonExist = true;
+                break;
+            }
+        }
+        
+        if(lbCommonExist){
+            addInventoryModelYear();
+            setInventoryModelYear(getInventoryModelYearList().size()-1,"sModelCde",lsModelCde);
+            setInventoryModelYear(getInventoryModelYearList().size()-1,"sModelDsc",lsModelDesc);
+            setInventoryModelYear(getInventoryModelYearList().size()-1,"sMakeIDxx","");
+            setInventoryModelYear(getInventoryModelYearList().size()-1,"sMakeDesc","");
+            setInventoryModelYear(getInventoryModelYearList().size()-1,"nYearModl",0);
+        }
     }
     
     /**
@@ -514,6 +539,10 @@ public class InventoryInformation implements GRecord{
         }
         
         return poJSON;
+    }
+    
+    public JSONObject checkExistingRecord() {
+        return poController.checkExistingRecord();
     }
     
 //    public JSONObject searchBin(String fsValue, boolean fbByActive) {

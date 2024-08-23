@@ -105,6 +105,7 @@ public class Inventory_Model {
 //                paDetail = new ArrayList<>();
 //                addDetail(fsValue);
                 poJSON.put("result", "error");
+                poJSON.put("continue", true);
                 poJSON.put("message", "No record selected.");
             }
             MiscUtil.close(loRS);
