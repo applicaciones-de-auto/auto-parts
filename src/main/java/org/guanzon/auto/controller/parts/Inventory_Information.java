@@ -5,13 +5,23 @@
  */
 package org.guanzon.auto.controller.parts;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.sql.rowset.CachedRowSet;
+import javax.sql.rowset.RowSetFactory;
+import javax.sql.rowset.RowSetProvider;
 import org.guanzon.appdriver.agent.ShowDialogFX;
 import org.guanzon.appdriver.base.GRider;
 import org.guanzon.appdriver.base.MiscUtil;
 import org.guanzon.appdriver.base.SQLUtil;
 import org.guanzon.appdriver.constant.EditMode;
 import org.guanzon.appdriver.iface.GRecord;
-import org.guanzon.auto.parts.model.Model_Inventory_Master;
+import org.guanzon.auto.model.parts.Model_Inventory_Information;
+import org.guanzon.auto.validator.parts.ValidatorFactory;
+import org.guanzon.auto.validator.parts.ValidatorInterface;
 import org.json.simple.JSONObject;
 
 /**
@@ -21,18 +31,22 @@ import org.json.simple.JSONObject;
 public class Inventory_Information implements GRecord {
 
     GRider poGRider;
-    boolean pbWthParent;
+    boolean pbWtParent;
     int pnEditMode;
+    String psBranchCd;
     String psRecdStat;
 
-    Model_Inventory_Master poModel;
+    Model_Inventory_Information poModel;
     JSONObject poJSON;
+    
+    CachedRowSet poVhclModel;
 
-    public Inventory_Information(GRider foGRider, boolean fbWthParent) {
+    public Inventory_Information(GRider foGRider, boolean fbWthParent, String fsBranchCd) {
         poGRider = foGRider;
-        pbWthParent = fbWthParent;
+        pbWtParent = fbWthParent;
+        psBranchCd = fsBranchCd.isEmpty() ? foGRider.getBranchCode() : fsBranchCd;
 
-        poModel = new Model_Inventory_Master(foGRider);
+        poModel = new Model_Inventory_Information(foGRider);
         pnEditMode = EditMode.UNKNOWN;
     }
 
@@ -68,45 +82,88 @@ public class Inventory_Information implements GRecord {
 
     @Override
     public JSONObject newRecord() {
-        return poModel.newRecord();
+        poJSON = new JSONObject();
+        try{
+            pnEditMode = EditMode.ADDNEW;
+            org.json.simple.JSONObject obj;
+
+            poModel = new Model_Inventory_Information(poGRider);
+            Connection loConn = null;
+            loConn = setConnection();
+            poModel.newRecord();
+            poModel.setStockID(MiscUtil.getNextCode(poModel.getTable(), "sStockIDx", true, loConn, psBranchCd+"ST"));
+            
+            if (poModel == null){
+                poJSON.put("result", "error");
+                poJSON.put("message", "initialized new record failed.");
+                return poJSON;
+            }else{
+                poJSON.put("result", "success");
+                poJSON.put("message", "initialized new record.");
+                pnEditMode = EditMode.ADDNEW;
+            }
+               
+        }catch(NullPointerException e){
+            poJSON.put("result", "error");
+            poJSON.put("message", e.getMessage());
+        }
+        
+        return poJSON;
+    }
+    
+    private Connection setConnection(){
+        Connection foConn;
+        
+        if (pbWtParent){
+            foConn = (Connection) poGRider.getConnection();
+            if (foConn == null) foConn = (Connection) poGRider.doConnect();
+        }else foConn = (Connection) poGRider.doConnect();
+        
+        return foConn;
     }
 
     @Override
     public JSONObject openRecord(String fsValue) {
-        return poModel.openRecord(fsValue);
+        pnEditMode = EditMode.READY;
+        poJSON = new JSONObject();
+        
+        poModel = new Model_Inventory_Information(poGRider);
+        poJSON = poModel.openRecord(fsValue);
+        
+        if("error".equals(poJSON.get("result"))){
+            return poJSON;
+        } 
+        return poJSON;
     }
 
     @Override
     public JSONObject updateRecord() {
-        JSONObject loJSON = new JSONObject();
-
-        if (poModel.getEditMode() == EditMode.UPDATE) {
-            loJSON.put("result", "success");
-            loJSON.put("message", "Edit mode has changed to update.");
-        } else {
-            loJSON.put("result", "error");
-            loJSON.put("message", "No record loaded to update.");
+        poJSON = new JSONObject();
+        if (pnEditMode != EditMode.READY && pnEditMode != EditMode.UPDATE){
+            poJSON.put("result", "error");
+            poJSON.put("message", "Invalid edit mode.");
+            return poJSON;
         }
-        return loJSON;
+        pnEditMode = EditMode.UPDATE;
+        poJSON.put("result", "success");
+        poJSON.put("message", "Update mode success.");
+        return poJSON;
     }
 
     @Override
-    public JSONObject saveRecord() {
-        if (!pbWthParent) {
-            poGRider.beginTrans();
+    public JSONObject saveRecord(){
+        
+        poModel.setTrimBCde(poModel.getBarCode().replace(" ", ""));
+        
+        ValidatorInterface validator = ValidatorFactory.make( ValidatorFactory.TYPE.Inventory_Information, poModel);
+        validator.setGRider(poGRider);
+        if (!validator.isEntryOkay()){
+            poJSON.put("result", "error");
+            poJSON.put("message", validator.getMessage());
+            return poJSON;
         }
-
+        
         poJSON = poModel.saveRecord();
-
-        if ("success".equals((String) poJSON.get("result"))) {
-            if (!pbWthParent) {
-                poGRider.commitTrans();
-            }
-        } else {
-            if (!pbWthParent) {
-                poGRider.rollbackTrans();
-            }
-        }
         return poJSON;
     }
 
@@ -125,8 +182,22 @@ public class Inventory_Information implements GRecord {
             if ("error".equals((String) poJSON.get("result"))) {
                 return poJSON;
             }
-
+            
+            ValidatorInterface validator = ValidatorFactory.make( ValidatorFactory.TYPE.Inventory_Information, poModel);
+            validator.setGRider(poGRider);
+            if (!validator.isEntryOkay()){
+                poJSON.put("result", "error");
+                poJSON.put("message", validator.getMessage());
+                return poJSON;
+            }
             poJSON = poModel.saveRecord();
+            if ("success".equals((String) poJSON.get("result"))) {
+                poJSON.put("result", "success");
+                poJSON.put("message", "Deactivation success.");
+            } else {
+                poJSON.put("result", "error");
+                poJSON.put("message", "Deactivation failed.");
+            }
         } else {
             poJSON = new JSONObject();
             poJSON.put("result", "error");
@@ -141,12 +212,26 @@ public class Inventory_Information implements GRecord {
 
         if (poModel.getEditMode() == EditMode.UPDATE) {
             poJSON = poModel.setActive(true);
-
             if ("error".equals((String) poJSON.get("result"))) {
                 return poJSON;
             }
-
+            
+            ValidatorInterface validator = ValidatorFactory.make( ValidatorFactory.TYPE.Inventory_Information, poModel);
+            validator.setGRider(poGRider);
+            if (!validator.isEntryOkay()){
+                poJSON.put("result", "error");
+                poJSON.put("message", validator.getMessage());
+                return poJSON;
+            }
+            
             poJSON = poModel.saveRecord();
+            if ("success".equals((String) poJSON.get("result"))) {
+                poJSON.put("result", "success");
+                poJSON.put("message", "Activation success.");
+            } else {
+                poJSON.put("result", "error");
+                poJSON.put("message", "Activation failed.");
+            }
         } else {
             poJSON = new JSONObject();
             poJSON.put("result", "error");
@@ -156,43 +241,155 @@ public class Inventory_Information implements GRecord {
     }
 
     @Override
-    public JSONObject searchRecord(String fsValue, boolean fbByCode) {
-        String lsCondition = "";
-
-        if (psRecdStat.length() > 1) {
-            for (int lnCtr = 0; lnCtr <= psRecdStat.length() - 1; lnCtr++) {
-                lsCondition += ", " + SQLUtil.toSQL(Character.toString(psRecdStat.charAt(lnCtr)));
-            }
-
-            lsCondition = "cRecdStat IN (" + lsCondition.substring(2) + ")";
+    public JSONObject searchRecord(String fsValue, boolean fbByActive) {
+        JSONObject loJSON = new JSONObject();
+        String lsSQL =    " SELECT "                                              
+                        + "    a.sStockIDx "                                      
+                        + "  , a.sBarCodex "                                      
+                        + "  , a.sDescript "                                      
+                        + "  , a.sBriefDsc "                                       
+                        + "  , a.cRecdStat "                                        
+                        + "  , b.sDescript AS sBrandNme "                         
+                        + "  , c.sMeasurNm "                                      
+                        + "  , d.sDescript AS sInvTypDs "
+                        + "  , e.sDescript AS sCatgeDs1 "                         
+                        + " FROM inventory a "                                    
+                        + " LEFT JOIN brand b ON b.sBrandCde = a.sBrandCde    "   
+                        + " LEFT JOIN measure c ON c.sMeasurID = a.sMeasurID  "   
+                        + " LEFT JOIN inv_type d ON d.sInvTypCd = a.sInvTypCd "
+                        + " LEFT JOIN inventory_category e ON e.sCategrCd = a.sCategCd1 "         ;
+        
+        if(fbByActive){
+            lsSQL = MiscUtil.addCondition(lsSQL,  " a.sDescript LIKE " + SQLUtil.toSQL(fsValue + "%")
+                                                    + " AND a.cRecdStat = '1' ");
         } else {
-            lsCondition = "cRecdStat = " + SQLUtil.toSQL(psRecdStat);
+            lsSQL = MiscUtil.addCondition(lsSQL,  " a.sDescript LIKE " + SQLUtil.toSQL(fsValue + "%"));
         }
-
-        String lsSQL = MiscUtil.addCondition(poModel.makeSelectSQL(), " sDescript LIKE "
-                + SQLUtil.toSQL(fsValue + "%") + " AND " + lsCondition);
-
-        poJSON = ShowDialogFX.Search(poGRider,
+        
+        System.out.println("SEARCH INVENTORY INFORMATION: " + lsSQL);
+        loJSON = ShowDialogFX.Search(poGRider,
                 lsSQL,
                 fsValue,
-                "Bar Code»Description",
-                "sBarCodex»sDescript",
-                "sBarCodex»sDescript",
-                fbByCode ? 0 : 1);
+                "Stock ID»Barcode»Description",
+                "sStockIDx»sBarCodex»sDescript",
+                "a.sStockIDx»a.sBarCodex»a.sDescript",
+                1);
 
-        if (poJSON != null) {
-            return poModel.openRecord((String) poJSON.get("sStockIDx"));
+        if (loJSON != null) {
         } else {
-            poJSON.put("result", "error");
-            poJSON.put("message", "No record loaded to update.");
-            return poJSON;
+            loJSON = new JSONObject();
+            loJSON.put("result", "error");
+            loJSON.put("message", "No record loaded.");
+            return loJSON;
         }
+        
+        return loJSON;
     }
 
     @Override
-    public Model_Inventory_Master getModel() {
+    public Model_Inventory_Information getModel() {
         return poModel;
     }
     
+    public JSONObject loadVehicleModel(){
+        JSONObject loJSON = new JSONObject();
+        try {
+            String lsSQL =    " SELECT "                                               
+                            + "   a.sModelIDx "                                        
+                            + " , a.sModelDsc "                                        
+                            + " , a.sMakeIDxx "                                        
+                            + " , a.cRecdStat "                                        
+                            + " , b.sMakeDesc "                                        
+                            + " FROM vehicle_model a "                                 
+                            + " LEFT JOIN vehicle_make b ON b.sMakeIDxx = a.sMakeIDxx ";
+            
+            lsSQL = MiscUtil.addCondition(lsSQL,  " a.cRecdStat = '1' "
+                                                   // + " AND a.sMakeIDxx = " + SQLUtil.toSQL(fsMakeID)
+                                                    + " GROUP BY a.sModelDsc ORDER BY b.sMakeDesc, a.sModelDsc DESC ");
+            
+            
+            System.out.println("LOAD VEHICLE MODEL "+ lsSQL);
+            RowSetFactory factory = RowSetProvider.newFactory();
+            ResultSet loRS = poGRider.executeQuery(lsSQL);
+            try {
+                poVhclModel = factory.createCachedRowSet();
+                poVhclModel.populate(loRS);
+                MiscUtil.close(loRS);
+                loJSON.put("result", "success");
+                loJSON.put("message", "Vehicle Model load successfully.");
+            } catch (SQLException e) {
+                loJSON.put("result", "error");
+                loJSON.put("message", e.getMessage());
+            }
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(Inventory_Information.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return loJSON;
+    }
     
+    public int getVehicleModelCount() throws SQLException{
+        if (poVhclModel != null){
+            poVhclModel.last();
+            return poVhclModel.getRow();
+        }else{
+            return 0;
+        }
+    }
+    
+    public Object getVehicleModelDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        poVhclModel.absolute(fnRow);
+        return poVhclModel.getObject(fnIndex);
+    }
+    
+    public Object getVehicleModelDetail(int fnRow, String fsIndex) throws SQLException{
+        return getVehicleModelDetail(fnRow, MiscUtil.getColumnIndex(poVhclModel, fsIndex));
+    }
+    
+    public JSONObject checkExistingRecord(){
+        JSONObject loJSON = new JSONObject();
+        //Check Existing BARCODE
+        try {
+            String lsID = "";
+            String lsDesc = "";
+            String lsSQL = "";
+                lsSQL =   " SELECT "         
+                        + "   sStockIDx "    
+                        + " , sBarCodex "    
+                        + " , sDescript "    
+                        + " , sBriefDsc "    
+                        + " , sAltBarCd "    
+                        + " , sTrimBCde "    
+                        + " , cRecdStat "    
+                        + " FROM inventory "  ;
+                lsSQL = MiscUtil.addCondition(lsSQL, " ( sBarCodex = " + SQLUtil.toSQL(poModel.getBarCode()) 
+                                                        + " OR sTrimBCde = " + SQLUtil.toSQL(poModel.getTrimBCde()) 
+                                                        + ") AND sStockIDx <> " + SQLUtil.toSQL(poModel.getStockID()) 
+                                                        );
+                System.out.println("EXISTING sBarCodex CHECK: " + lsSQL);
+                ResultSet loRS = poGRider.executeQuery(lsSQL);
+
+                if (MiscUtil.RecordCount(loRS) > 0){
+                    while(loRS.next()){
+                        lsID = loRS.getString("sStockIDx");
+                        lsDesc = loRS.getString("sDescript");
+                    }
+
+                    MiscUtil.close(loRS);
+                    loJSON.put("result", "error");
+                    loJSON.put("sStockIDx", lsID);
+                    loJSON.put("message", "Barcode is already exist."
+                                            + "\n\n<Stock ID:" + lsID + ">"
+                                            + "\n<Description:" + lsDesc + ">"
+                                            + "\n\nDo you want to open the record?");
+                    return loJSON;
+                } 
+        } catch (SQLException ex) {
+            Logger.getLogger(Inventory_Information.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return loJSON;
+    }
 }
